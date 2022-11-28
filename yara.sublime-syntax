@@ -3,8 +3,9 @@
 # See https://www.sublimetext.com/docs/syntax.html
 name: YARA
 file_extensions: [yar, yara]
-scope: source.yara
 first_line_match: ^(?:(?<!global\s)\bglobal\b\s|(?<!private\s)\bprivate\b\s){0,2}\brule\b\s(?![0-9])[_a-zA-Z0-9]{1,128}(?:\s:(?:\s(?![0-9])[_a-zA-Z0-9]{1,128}){1,128})?
+scope: source.yara
+version: 2
 
 contexts:
   main:
@@ -17,38 +18,68 @@ contexts:
       push: line_comment
 
     - match: '/\*'
-      scope: punctuation.definition.block.comment.begin.yara
+      scope: punctuation.definition.comment.begin.yara
       push: block_comment
 
     - match: '\b(import|include)\b'
       scope: keyword.control.import.yara
 
+    - match: '\b0[xX][0-9]+'
+      scope: constant.numeric.integer.hexadecimal.yara
+
+    - match: '\b[0-9]+'
+      scope: constant.numeric.integer.decimal.yara
+
     - match: '\b(int8|int16|int32|int8be|int16be|int32be|uint8|uint16|uint32|uint8be|uint16be|uint32be)\b'
-      scope: keyword.declaration.type.yara
+      scope: storage.type.yara
+
+    - match: '\b(console|cuckoo|demo|dex|dotnet|elf|hash|macho|magic|math|pe|time|vt)\b'
+      scope: variable.function.yara
 
     - match: '\b(rule|meta|strings|condition)\b'
-      scope: support.function.builtin.yara
+      scope: entity.name.namespace.yara
 
-    - match: '\b(global|private|ascii|base64|base64wide|nocase|wide|xor|fullword)\b'
-      scope: support.type.yara
+    - match: '\bstrings\b'
+      scope: entity.name.namespace.yara
+      push:
+        - strings
+        - strings_scope
 
-    - match: '\b(all|any|at|contains|defined|endswith|entrypoint|false|filesize|for|icontains|iendswith|iequals|in|istartswith|matches|of|startswith|them|true)\b'
-      scope: entity.name.yara
+    - match: '\b(global|private)\b'
+      scope: storage.modifier.yara
 
-    - match: '\b(and|or|not)\b'
+    - match: '\b(ascii|base64|base64wide|nocase|wide|xor|fullword)\b'
+      scope: storage.type.yara
+
+    - match: '\bfor\b'
       scope: keyword.control.conditional.yara
 
-    - match: '=\s*{'
-      scope: definition.constant.numeric.begin.yara
-      push: constant
+    - match: '\b(all|any|entrypoint|false|filesize|them|true)\b'
+      scope: constant.language.yara
+
+    - match: '\b(and|at|contains|defined|endswith|icontains|iendswith|iequals|in|istartswith|matches|not|of|or|startswith)\b'
+      scope: keyword.operator.word.yara
+
+    - match: '(>=|<=|<|>|==|!=)'
+      scope: keyword.operator.logical.yara
+
+    - match: '(\+|\*|-|\\|%)'
+      scope: keyword.operator.arithmetic.yara
+
+    - match: '(&|\||<<|>>|~|\^)'
+      scope: keyword.operator.bitwise.yara
+
+    - match: '(\$|!|#|@)'
+      scope: punctuation.definition.variable.yara
+      push: variable
 
     - match: '=\s*/'
       scope: punctuation.definition.regex.begin.yara
       push: regex
 
   double_quoted_string:
-    - meta_content_scope: string.quoted.double.yara
-    - match: '\\.'
+    - meta_scope: string.quoted.double.yara
+    - match: '(\\"|\\\\|\\r|\\t|\\n|\\x[a-fA-F0-9]{2})'
       scope: constant.character.escape.yara
     - match: '"($|\s*)'
       scope: punctuation.definition.string.end.yara
@@ -62,7 +93,34 @@ contexts:
   block_comment:
     - meta_scope: comment.block.yara
     - match: '\*/'
-      scope: punctuation.definition.block.comment.end.yara
+      scope: punctuation.definition.comment.end.yara
+      pop: true
+
+  variable:
+    - meta_scope: variable.other.yara
+    - match: ' '
+      pop: true
+
+  strings:
+    - meta_scope: meta.namespace
+
+  strings_scope:
+    - match: '{'
+      scope: punctuation.definition.string.hex.begin.yara
+      push: hex_string
+
+  hex_string:
+    - meta_content_scope: string.hex.yara
+    - match: '[a-fA-F0-9]'
+      scope: constant.hex.yara
+    - match: '\?'
+      scope: punctuation..wildcard.yara
+    - match: '(\[\]-)'
+      scope: punctuation.jump.yara
+    - match: '\(\)\|'
+      scope: punctuation.alternative.yara
+    - match: '}'
+      scope: punctuation.definition.string.hex.end.yara
       pop: true
 
   constant:
@@ -74,7 +132,7 @@ contexts:
       pop: true
 
   regex:
-    - meta_content_scope: variable.parameter.yara
+    - meta_content_scope: variable.language.yara
     - match: '/'
       scope: punctuation.definition.regex.end.yara
       pop: true
